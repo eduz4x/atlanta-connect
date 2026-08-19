@@ -557,6 +557,58 @@ button {
   font-family: var(--font-body);
 }
 
+.volume-panel {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 25;
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.7);
+  min-width: 280px;
+}
+
+.volume-panel[hidden] {
+  display: none;
+}
+
+.volume-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.volume-row label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  width: 88px;
+  flex-shrink: 0;
+}
+
+.volume-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--grad-mid);
+  cursor: pointer;
+}
+
+.volume-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  width: 42px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 .toast {
   position: fixed;
   bottom: 90px;
