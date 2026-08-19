@@ -85,6 +85,40 @@
     tag.innerHTML = `<span class="mic-off" style="display:none">🔇</span><span>${label}</span>`;
     tile.appendChild(tag);
 
+    if (kind === "screen") {
+      const liveBadge = document.createElement("div");
+      liveBadge.className = "live-badge";
+      liveBadge.innerHTML = '<span class="live-dot"></span>Ao vivo';
+      tile.appendChild(liveBadge);
+
+      const viewerBadge = document.createElement("div");
+      viewerBadge.className = "viewer-badge";
+      viewerBadge.textContent = `${Object.keys(peers).length + 1} assistindo`;
+      tile.appendChild(viewerBadge);
+
+      const expandBtn = document.createElement("button");
+      expandBtn.type = "button";
+      expandBtn.className = "expand-btn";
+      expandBtn.title = "Tela cheia";
+      expandBtn.textContent = "⛶";
+      expandBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        requestTileFullscreen(tile);
+      });
+      tile.appendChild(expandBtn);
+      tile.addEventListener("dblclick", () => requestTileFullscreen(tile));
+
+      const bubble = document.createElement("div");
+      bubble.className = "cam-bubble";
+      bubble.hidden = true;
+      const bubbleVideo = document.createElement("video");
+      bubbleVideo.autoplay = true;
+      bubbleVideo.playsInline = true;
+      bubbleVideo.muted = true;
+      bubble.appendChild(bubbleVideo);
+      tile.appendChild(bubble);
+    }
+
     tileElements[id] = tile;
     orderedTileIds.push(id);
     renderLayout();
@@ -140,6 +174,9 @@
   function updateParticipantCount() {
     const n = Object.keys(peers).length + 1;
     participantCountEl.textContent = `${n} na sala`;
+    document.querySelectorAll(".viewer-badge").forEach((el) => {
+      el.textContent = `${n} assistindo`;
+    });
   }
 
   function showToast(msg) {
@@ -196,6 +233,7 @@
         camOn = true;
         camBtn.classList.remove("off");
         setTileStream("local", camStream);
+        syncCamBubble("local");
         Object.values(peers).forEach((p) => p.pc.addTrack(camTrack, camStream));
         camTrack.onended = () => {
           if (camOn) toggleCam();
@@ -208,6 +246,7 @@
       camOn = false;
       camBtn.classList.add("off");
       setTileStream("local", null);
+      syncCamBubble("local");
       Object.values(peers).forEach((p) => {
         const sender = p.pc.getSenders().find((s) => s.track === camTrack);
         if (sender) p.pc.removeTrack(sender);
@@ -230,6 +269,7 @@
         shareBtn.classList.add("active");
         createTile("local:screen", { label: `Tela de ${name}`, kind: "screen" });
         setTileStream("local:screen", screenStream);
+        syncCamBubble("local");
         Object.values(peers).forEach((p) => p.pc.addTrack(screenTrack, screenStream));
         broadcastState({ screenOn: true });
         screenTrack.onended = () => {
@@ -266,6 +306,37 @@
       const video = tileElements[id] && tileElements[id].querySelector("video");
       if (video) video.volume = playbackVolume;
     });
+  }
+
+  function requestTileFullscreen(tile) {
+    const req = tile.requestFullscreen || tile.webkitRequestFullscreen || tile.msRequestFullscreen;
+    if (req) req.call(tile).catch(() => {});
+  }
+
+  // Discord-style "Go Live": finds the screen-share tile belonging to a
+  // given owner ("local" or a peer id) so we can overlay their camera bubble on it.
+  function findScreenTileId(ownerId) {
+    if (ownerId === "local") {
+      return tileElements["local:screen"] ? "local:screen" : null;
+    }
+    return (
+      orderedTileIds.find(
+        (id) => id.startsWith(`${ownerId}:`) && tileElements[id].dataset.kind === "screen"
+      ) || null
+    );
+  }
+
+  function syncCamBubble(ownerId) {
+    const screenTileId = findScreenTileId(ownerId);
+    if (!screenTileId) return;
+    const screenTile = tileElements[screenTileId];
+    const bubble = screenTile.querySelector(".cam-bubble");
+    const bubbleVideo = bubble.querySelector("video");
+    const camTile = tileElements[ownerId];
+    const camVideo = camTile && camTile.querySelector("video");
+    const hasCam = camVideo && camVideo.srcObject && !camTile.classList.contains("no-video");
+    bubble.hidden = !hasCam;
+    bubbleVideo.srcObject = hasCam ? camVideo.srcObject : null;
   }
 
   function toggleVolumePanel(forceOpen) {
@@ -355,6 +426,7 @@
         });
       }
       setTileStream(tileId, stream);
+      syncCamBubble(peerId);
 
       stream.onremovetrack = () => {
         if (stream.getTracks().length === 0 && tileId !== peerId) {
