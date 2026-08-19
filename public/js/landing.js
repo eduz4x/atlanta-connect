@@ -14,6 +14,7 @@
     return code;
   }
 
+  // Pre-fill room code from URL (?room=XXXX) if present, like a shared invite link
   const params = new URLSearchParams(window.location.search);
   const prefilledRoom = params.get("room");
   if (prefilledRoom) {
