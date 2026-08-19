@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Calls privadas, tela compartilhada e modo cinema com amigos." />
+<title>Atlanta Connect</title>
+<link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <main class="landing">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div class="brand-name">Atlanta</div>
+    </div>
+
+    <section class="hero">
+      <p class="eyebrow">Call • Tela • Cinema</p>
+      <h1>Connect</h1>
+      <p>Seu cantinho para ficar em call com os amigos. Crie uma sala privada, converse por voz ou câmera, compartilhe a tela e use o modo cinema para assistir junto.</p>
+    </section>
+
+    <section class="panel">
+      <div class="field">
+        <label for="name">Seu nome</label>
+        <input id="name" type="text" maxlength="24" placeholder="Como podemos te chamar?" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label for="room">Código da sala</label>
+        <div class="room-row">
+          <input id="room" type="text" maxlength="6" placeholder="EX: W75RF4" autocomplete="off" />
+          <button class="btn-ghost" id="generate-btn" type="button">Gerar</button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="enter-btn" type="button">Entrar na sala</button>
+      <p class="hint" id="hint"></p>
+    </section>
+
+    <section class="features">
+      <div class="feature">
+        <span class="icon">🎤</span>
+        <h3>Call</h3>
+        <p>Voz e câmera em tempo real.</p>
+      </div>
+      <div class="feature">
+        <span class="icon">🖥️</span>
+        <h3>Compartilhar</h3>
+        <p>Mostre uma aba, janela ou tela.</p>
+      </div>
+      <div class="feature">
+        <span class="icon">🎬</span>
+        <h3>Modo cinema</h3>
+        <p>Interface em tela cheia para assistir.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/landing.js"></script>
+</body>
+</html>
