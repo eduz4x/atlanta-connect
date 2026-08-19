@@ -1,68 +1,380 @@
 (function () {
-  const nameInput = document.getElementById("name");
-  const roomInput = document.getElementById("room");
-  const generateBtn = document.getElementById("generate-btn");
-  const enterBtn = document.getElementById("enter-btn");
-  const hint = document.getElementById("hint");
+  const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
 
-  function randomRoomCode(length = 6) {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no confusing 0/O/1/I
-    let code = "";
-    for (let i = 0; i < length; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return code;
-  }
-
-  // Pre-fill room code from URL (?room=XXXX) if present, like a shared invite link
   const params = new URLSearchParams(window.location.search);
-  const prefilledRoom = params.get("room");
-  if (prefilledRoom) {
-    roomInput.value = prefilledRoom.toUpperCase();
+  const room = (params.get("room") || "").toUpperCase();
+  const name = sessionStorage.getItem("cc:name");
+
+  if (!room || !name) {
+    window.location.href = `/index.html${room ? `?room=${room}` : ""}`;
+    return;
   }
 
-  const savedName = sessionStorage.getItem("cc:name");
-  if (savedName) nameInput.value = savedName;
+  document.getElementById("room-code-label").textContent = room;
 
-  generateBtn.addEventListener("click", () => {
-    roomInput.value = randomRoomCode();
-    hint.textContent = "";
-    hint.classList.remove("error");
-  });
+  const stageEl = document.getElementById("stage");
+  const filmstripEl = document.getElementById("filmstrip");
+  const roomShellEl = document.getElementById("room-shell");
+  const participantCountEl = document.getElementById("participant-count");
+  const toastEl = document.getElementById("toast");
 
-  roomInput.addEventListener("input", () => {
-    roomInput.value = roomInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  });
+  const micBtn = document.getElementById("mic-btn");
+  const camBtn = document.getElementById("cam-btn");
+  const shareBtn = document.getElementById("share-btn");
+  const cinemaBtn = document.getElementById("cinema-btn");
+  const leaveBtn = document.getElementById("leave-btn");
+  const copyLink = document.getElementById("copy-link");
 
-  function showError(message) {
-    hint.textContent = message;
-    hint.classList.add("error");
+  const socket = io();
+
+  // ---- state ----
+  const peers = {}; // peerId -> { pc, name }
+  const tileElements = {}; // tileId -> DOM element
+  let orderedTileIds = [];
+  let cinemaMode = false;
+
+  let micStream = null;
+  let micTrack = null;
+  let micOn = false;
+
+  let camStream = null;
+  let camTrack = null;
+  let camOn = false;
+
+  let screenStream = null;
+  let screenTrack = null;
+  let screenOn = false;
+
+  // ---------- tile helpers ----------
+
+  function initials(n) {
+    return (n || "?").trim().charAt(0).toUpperCase();
   }
 
-  function enterRoom() {
-    const name = nameInput.value.trim();
-    let room = roomInput.value.trim().toUpperCase();
+  function createTile(id, { label, kind }) {
+    const tile = document.createElement("div");
+    tile.className = "tile no-video";
+    tile.dataset.kind = kind;
+    if (kind === "screen") tile.classList.add("screen-tile");
 
-    if (!name) {
-      showError("Digite seu nome para continuar.");
-      nameInput.focus();
+    const video = document.createElement("video");
+    video.autoplay = true;
+    video.playsInline = true;
+    if (id === "local") video.muted = true;
+    tile.appendChild(video);
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = initials(label);
+    tile.appendChild(avatar);
+
+    const tag = document.createElement("div");
+    tag.className = "name-tag";
+    tag.innerHTML = `<span class="mic-off" style="display:none">🔇</span><span>${label}</span>`;
+    tile.appendChild(tag);
+
+    tileElements[id] = tile;
+    orderedTileIds.push(id);
+    renderLayout();
+    return tile;
+  }
+
+  function setTileStream(id, stream) {
+    const tile = tileElements[id];
+    if (!tile) return;
+    const video = tile.querySelector("video");
+    video.srcObject = stream;
+    tile.classList.toggle("no-video", !stream);
+  }
+
+  function setTileMicOff(id, off) {
+    const tile = tileElements[id];
+    if (!tile) return;
+    const el = tile.querySelector(".mic-off");
+    if (el) el.style.display = off ? "inline" : "none";
+  }
+
+  function removeTile(id) {
+    const tile = tileElements[id];
+    if (!tile) return;
+    tile.remove();
+    delete tileElements[id];
+    orderedTileIds = orderedTileIds.filter((t) => t !== id);
+    renderLayout();
+  }
+
+  function renderLayout() {
+    if (!cinemaMode) {
+      stageEl.replaceChildren(...orderedTileIds.map((id) => tileElements[id]));
+      filmstripEl.replaceChildren();
+      orderedTileIds.forEach((id) => tileElements[id].classList.remove("focus-tile"));
       return;
     }
-
-    if (!room) {
-      room = randomRoomCode();
-      roomInput.value = room;
-    }
-
-    sessionStorage.setItem("cc:name", name);
-    window.location.href = `/room.html?room=${encodeURIComponent(room)}`;
+    const focusId =
+      orderedTileIds.find((id) => tileElements[id].dataset.kind === "screen") ||
+      orderedTileIds[0];
+    stageEl.replaceChildren(tileElements[focusId]);
+    tileElements[focusId].classList.add("focus-tile");
+    const rest = orderedTileIds.filter((id) => id !== focusId);
+    filmstripEl.replaceChildren(...rest.map((id) => {
+      tileElements[id].classList.remove("focus-tile");
+      return tileElements[id];
+    }));
   }
 
-  enterBtn.addEventListener("click", enterRoom);
+  function updateParticipantCount() {
+    const n = Object.keys(peers).length + 1;
+    participantCountEl.textContent = `${n} na sala`;
+  }
 
-  [nameInput, roomInput].forEach((el) => {
-    el.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") enterRoom();
-    });
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toastEl.classList.remove("show"), 2200);
+  }
+
+  // ---------- local media ----------
+
+  createTile("local", { label: `${name} (você)`, kind: "camera" });
+
+  async function initMic() {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micTrack = micStream.getAudioTracks()[0];
+      micOn = true;
+      micBtn.classList.remove("off");
+      Object.values(peers).forEach((p) => p.pc.addTrack(micTrack, micStream));
+      broadcastState({ micOn });
+    } catch (err) {
+      micOn = false;
+      micBtn.classList.add("off");
+      showToast("Não foi possível acessar o microfone.");
+    }
+  }
+
+  function toggleMic() {
+    if (!micTrack) return initMic();
+    micOn = !micOn;
+    micTrack.enabled = micOn;
+    micBtn.classList.toggle("off", !micOn);
+    broadcastState({ micOn });
+  }
+
+  async function toggleCam() {
+    if (!camOn) {
+      try {
+        camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        camTrack = camStream.getVideoTracks()[0];
+        camOn = true;
+        camBtn.classList.remove("off");
+        setTileStream("local", camStream);
+        Object.values(peers).forEach((p) => p.pc.addTrack(camTrack, camStream));
+        camTrack.onended = () => {
+          if (camOn) toggleCam();
+        };
+        broadcastState({ camOn });
+      } catch (err) {
+        showToast("Não foi possível acessar a câmera.");
+      }
+    } else {
+      camOn = false;
+      camBtn.classList.add("off");
+      setTileStream("local", null);
+      Object.values(peers).forEach((p) => {
+        const sender = p.pc.getSenders().find((s) => s.track === camTrack);
+        if (sender) p.pc.removeTrack(sender);
+      });
+      camTrack.stop();
+      camTrack = null;
+      camStream = null;
+      broadcastState({ camOn });
+    }
+  }
+
+  async function toggleShare() {
+    if (!screenOn) {
+      try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        screenTrack = screenStream.getVideoTracks()[0];
+        screenOn = true;
+        shareBtn.classList.add("active");
+        createTile("local:screen", { label: `Tela de ${name}`, kind: "screen" });
+        setTileStream("local:screen", screenStream);
+        Object.values(peers).forEach((p) => p.pc.addTrack(screenTrack, screenStream));
+        broadcastState({ screenOn: true });
+        screenTrack.onended = () => {
+          if (screenOn) toggleShare();
+        };
+      } catch (err) {
+        // user cancelled the picker — no error toast needed
+      }
+    } else {
+      screenOn = false;
+      shareBtn.classList.remove("active");
+      removeTile("local:screen");
+      Object.values(peers).forEach((p) => {
+        const sender = p.pc.getSenders().find((s) => s.track === screenTrack);
+        if (sender) p.pc.removeTrack(sender);
+      });
+      screenTrack.stop();
+      screenTrack = null;
+      screenStream = null;
+      broadcastState({ screenOn: false });
+    }
+  }
+
+  function toggleCinema() {
+    cinemaMode = !cinemaMode;
+    roomShellEl.classList.toggle("cinema", cinemaMode);
+    cinemaBtn.classList.toggle("active", cinemaMode);
+    renderLayout();
+  }
+
+  function broadcastState(payload) {
+    socket.emit("state-change", payload);
+  }
+
+  micBtn.addEventListener("click", toggleMic);
+  camBtn.addEventListener("click", toggleCam);
+  shareBtn.addEventListener("click", toggleShare);
+  cinemaBtn.addEventListener("click", toggleCinema);
+  leaveBtn.addEventListener("click", () => {
+    socket.emit("leave-room");
+    window.location.href = "/index.html";
   });
+  copyLink.addEventListener("click", () => {
+    const url = `${window.location.origin}/?room=${room}`;
+    navigator.clipboard.writeText(url).then(() => showToast("Link da sala copiado!"));
+  });
+
+  // ---------- WebRTC peer handling ----------
+
+  function localTracksAndStreams() {
+    const list = [];
+    if (micTrack) list.push([micTrack, micStream]);
+    if (camTrack) list.push([camTrack, camStream]);
+    if (screenTrack) list.push([screenTrack, screenStream]);
+    return list;
+  }
+
+  function createPeerConnection(peerId, peerName, initiator) {
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    peers[peerId] = { pc, name: peerName };
+    updateParticipantCount();
+
+    localTracksAndStreams().forEach(([track, stream]) => pc.addTrack(track, stream));
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        socket.emit("signal", { to: peerId, data: { candidate: e.candidate } });
+      }
+    };
+
+    pc.ontrack = (e) => {
+      const stream = e.streams[0];
+      const isFirstVideo = !tileElements[peerId];
+      const tileId = isFirstVideo ? peerId : `${peerId}:${stream.id}`;
+
+      if (!tileElements[tileId]) {
+        const isScreen = tileId !== peerId; // second+ stream from this peer = screen share
+        createTile(tileId, {
+          label: isScreen ? `Tela de ${peerName}` : peerName,
+          kind: isScreen ? "screen" : "camera",
+        });
+      }
+      setTileStream(tileId, stream);
+
+      stream.onremovetrack = () => {
+        if (stream.getTracks().length === 0 && tileId !== peerId) {
+          removeTile(tileId);
+        }
+      };
+    };
+
+    pc.onnegotiationneeded = async () => {
+      if (pc.signalingState !== "stable") return;
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit("signal", { to: peerId, data: { sdp: pc.localDescription } });
+      } catch (err) {
+        /* ignore transient negotiation races */
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      if (["failed", "closed", "disconnected"].includes(pc.connectionState)) {
+        // cleanup handled by user-left event; this guards against silent stalls
+      }
+    };
+
+    if (initiator) {
+      pc.onnegotiationneeded();
+    }
+
+    return pc;
+  }
+
+  socket.on("connect", () => {
+    socket.emit("join-room", { room, name });
+  });
+
+  socket.on("room-users", (users) => {
+    users.forEach((u) => createPeerConnection(u.id, u.name, true));
+  });
+
+  socket.on("user-joined", ({ id, name: peerName }) => {
+    createPeerConnection(id, peerName, false);
+    showToast(`${peerName} entrou na sala`);
+  });
+
+  socket.on("signal", async ({ from, data }) => {
+    let peer = peers[from];
+    if (!peer) {
+      // shouldn't normally happen (user-joined fires first), but guard anyway
+      const pc = createPeerConnection(from, "Convidado", false);
+      peer = peers[from];
+    }
+    const pc = peer.pc;
+
+    if (data.sdp) {
+      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      if (data.sdp.type === "offer") {
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit("signal", { to: from, data: { sdp: pc.localDescription } });
+      }
+    } else if (data.candidate) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      } catch (err) {
+        /* ICE candidate arrived before remote description was set — safe to ignore */
+      }
+    }
+  });
+
+  socket.on("state-change", ({ id, micOn: remoteMicOn }) => {
+    if (typeof remoteMicOn === "boolean") setTileMicOff(id, !remoteMicOn);
+  });
+
+  socket.on("user-left", ({ id }) => {
+    const peer = peers[id];
+    if (peer) {
+      peer.pc.close();
+      delete peers[id];
+    }
+    removeTile(id);
+    Object.keys(tileElements)
+      .filter((tid) => tid.startsWith(`${id}:`))
+      .forEach(removeTile);
+    updateParticipantCount();
+  });
+
+  window.addEventListener("beforeunload", () => {
+    socket.emit("leave-room");
+  });
+
+  // start with mic enabled by default so voice calling works out of the box
+  initMic();
 })();
