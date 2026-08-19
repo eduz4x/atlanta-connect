@@ -30,8 +30,22 @@
       <button class="ctrl-btn off" id="cam-btn" title="Ativar/desativar câmera">📷</button>
       <button class="ctrl-btn" id="share-btn" title="Compartilhar tela">🖥️</button>
       <button class="ctrl-btn" id="cinema-btn" title="Modo cinema">🎬</button>
+      <button class="ctrl-btn" id="volume-btn" title="Volume">🔊</button>
       <button class="ctrl-btn leave" id="leave-btn" title="Sair da sala">Sair</button>
     </footer>
+
+    <div class="volume-panel" id="volume-panel" hidden>
+      <div class="volume-row">
+        <label for="mic-volume">Microfone</label>
+        <input type="range" id="mic-volume" min="0" max="200" value="100" />
+        <span class="volume-value" id="mic-volume-value">100%</span>
+      </div>
+      <div class="volume-row">
+        <label for="playback-volume">Transmissão</label>
+        <input type="range" id="playback-volume" min="0" max="100" value="100" />
+        <span class="volume-value" id="playback-volume-value">100%</span>
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>
