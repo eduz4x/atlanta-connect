@@ -1,17 +1,21 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap");
 
 :root {
-  --bg: #0b0f14;
-  --panel: #121a22;
-  --panel-2: #182330;
-  --line: #24313f;
-  --ice: #5ec8d8;
-  --ice-dim: #3a7f8c;
-  --ember: #ff8552;
-  --text: #e7ecef;
-  --muted: #8a97a6;
-  --danger: #e56a6a;
-  --radius: 14px;
+  --bg: #150f1c;
+  --panel: #1f1826;
+  --panel-2: #291f32;
+  --line: #392c44;
+  --grad-start: #ff9142;
+  --grad-mid: #f13d99;
+  --grad-end: #b62bd6;
+  --grad: linear-gradient(120deg, var(--grad-start) 0%, var(--grad-mid) 55%, var(--grad-end) 100%);
+  --ice: #f13d99; /* kept for backwards-compat with existing rules; now the accent pink */
+  --ice-dim: #b62bd6;
+  --ember: #ff9142;
+  --text: #f4eef8;
+  --muted: #a897b3;
+  --danger: #ef5d7a;
+  --radius: 16px;
   --font-display: "Space Grotesk", sans-serif;
   --font-body: "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -36,17 +40,29 @@ body {
   overflow-x: hidden;
 }
 
-/* Topographic contour-line backdrop — the signature motif */
+/* Network-motif backdrop — faint node grid + two soft gradient glows, echoing the logo's loops */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900' viewBox='0 0 900 900'%3E%3Cg fill='none' stroke='%23203040' stroke-width='1'%3E%3Cpath d='M-50 620 C 150 560, 250 700, 450 640 S 800 540, 950 620'/%3E%3Cpath d='M-50 560 C 150 500, 260 640, 450 580 S 800 480, 950 560'/%3E%3Cpath d='M-50 500 C 150 440, 270 580, 450 520 S 800 420, 950 500'/%3E%3Cpath d='M-50 440 C 150 380, 280 520, 450 460 S 800 360, 950 440'/%3E%3Cpath d='M-50 380 C 150 320, 290 460, 450 400 S 800 300, 950 380'/%3E%3C/g%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 900px 900px;
-  opacity: 0.55;
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(255, 145, 66, 0.9) 0, rgba(255, 145, 66, 0) 1.4px);
+  background-size: 42px 42px;
+  opacity: 0.16;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 620px 460px at 12% -6%, rgba(255, 145, 66, 0.24), transparent 60%),
+    radial-gradient(ellipse 680px 520px at 96% 12%, rgba(241, 61, 153, 0.22), transparent 60%),
+    radial-gradient(ellipse 520px 420px at 50% 108%, rgba(182, 43, 214, 0.16), transparent 60%);
 }
 
 a {
@@ -63,69 +79,73 @@ button {
   position: relative;
   z-index: 1;
   min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 64px 24px 48px;
+  padding: 48px 24px 56px;
+  max-width: 1080px;
+  margin: 0 auto;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 42px;
+  gap: 10px;
+  margin-bottom: 56px;
 }
 
 .brand-mark {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: linear-gradient(155deg, var(--ice) 0%, var(--ice-dim) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: #0b0f14;
-  font-size: 20px;
+  height: 34px;
+  width: auto;
+  display: block;
 }
 
 .brand-name {
-  font-family: var(--font-mono);
-  letter-spacing: 0.28em;
-  font-size: 12px;
-  color: var(--muted);
-  text-transform: uppercase;
+  display: none; /* the logo art already carries the wordmark */
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 56px;
+  align-items: center;
+  margin-bottom: 64px;
 }
 
 .hero {
-  text-align: center;
-  max-width: 620px;
-  margin-bottom: 40px;
+  position: relative;
+  text-align: left;
+  max-width: 480px;
 }
 
 .eyebrow {
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.32em;
-  color: var(--ice);
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   text-transform: uppercase;
   margin: 0 0 18px;
+  font-weight: 600;
 }
 
 .hero h1 {
   font-family: var(--font-display);
-  font-size: clamp(40px, 7vw, 64px);
-  line-height: 1.02;
-  margin: 0 0 18px;
+  font-size: clamp(44px, 6vw, 72px);
+  line-height: 0.98;
+  margin: 0 0 20px;
   letter-spacing: -0.01em;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .hero p {
   color: var(--muted);
   font-size: 17px;
-  line-height: 1.6;
+  line-height: 1.65;
   margin: 0;
+  max-width: 420px;
 }
 
 .panel {
@@ -133,12 +153,29 @@ button {
   z-index: 1;
   width: 100%;
   max-width: 420px;
+  justify-self: end;
   background: linear-gradient(180deg, var(--panel-2), var(--panel));
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 28px;
-  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6);
-  margin-bottom: 56px;
+  box-shadow: 0 30px 70px -30px rgba(182, 43, 214, 0.25);
+}
+
+@media (max-width: 860px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .hero {
+    text-align: center;
+    max-width: 100%;
+  }
+  .hero p {
+    margin: 0 auto;
+  }
+  .panel {
+    justify-self: center;
+  }
 }
 
 .field {
@@ -207,19 +244,19 @@ button {
 .btn-primary {
   width: 100%;
   margin-top: 6px;
-  background: var(--ice);
-  color: #06181c;
+  background: var(--grad);
+  color: #1a0f22;
   border: none;
   border-radius: 10px;
   padding: 14px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.12s ease, background 0.15s ease;
+  transition: transform 0.12s ease, filter 0.15s ease;
 }
 
 .btn-primary:hover {
-  background: #79d6e4;
+  filter: brightness(1.08);
 }
 
 .btn-primary:active {
@@ -249,8 +286,11 @@ button {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  max-width: 780px;
+  max-width: 100%;
   width: 100%;
+  margin: 0 auto;
+  border-top: 1px solid var(--line);
+  padding-top: 32px;
 }
 
 .feature {
@@ -311,6 +351,10 @@ button {
 
 .room-topbar .brand {
   margin: 0;
+}
+
+.room-topbar .brand-mark {
+  height: 26px;
 }
 
 .room-code-badge {
@@ -384,14 +428,14 @@ button {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(155deg, var(--ice) 0%, var(--ice-dim) 100%);
+  background: var(--grad);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 22px;
-  color: #06181c;
+  color: #1a0f22;
 }
 
 .tile .name-tag {
@@ -489,9 +533,9 @@ button {
 }
 
 .ctrl-btn.active {
-  background: var(--ice);
-  border-color: var(--ice);
-  color: #06181c;
+  background: var(--grad);
+  border-color: transparent;
+  color: #1a0f22;
 }
 
 .ctrl-btn.leave {
