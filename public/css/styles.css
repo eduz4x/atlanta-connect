@@ -9,7 +9,7 @@
   --grad-mid: #f13d99;
   --grad-end: #b62bd6;
   --grad: linear-gradient(120deg, var(--grad-start) 0%, var(--grad-mid) 55%, var(--grad-end) 100%);
-  --ice: #f13d99; /* kept for backwards-compat with existing rules; now the accent pink */
+  --ice: #f13d99;
   --ice-dim: #b62bd6;
   --ember: #ff9142;
   --text: #f4eef8;
@@ -40,7 +40,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Network-motif backdrop — faint node grid + two soft gradient glows, echoing the logo's loops */
 body::before {
   content: "";
   position: fixed;
@@ -92,13 +91,13 @@ button {
 }
 
 .brand-mark {
-  height: 34px;
+  height: 46px;
   width: auto;
   display: block;
 }
 
 .brand-name {
-  display: none; /* the logo art already carries the wordmark */
+  display: none;
 }
 
 .hero-grid {
@@ -354,7 +353,7 @@ button {
 }
 
 .room-topbar .brand-mark {
-  height: 26px;
+  height: 40px;
 }
 
 .room-code-badge {
@@ -396,10 +395,18 @@ button {
   flex: 1;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-auto-rows: min-content;
+  align-items: start;
   gap: 14px;
   padding: 20px;
   overflow-y: auto;
   align-content: start;
+}
+
+.stage .tile:only-child {
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .tile {
