@@ -189,7 +189,9 @@
   async function toggleCam() {
     if (!camOn) {
       try {
-        camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        camStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+        });
         camTrack = camStream.getVideoTracks()[0];
         camOn = true;
         camBtn.classList.remove("off");
@@ -220,7 +222,9 @@
   async function toggleShare() {
     if (!screenOn) {
       try {
-        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+        });
         screenTrack = screenStream.getVideoTracks()[0];
         screenOn = true;
         shareBtn.classList.add("active");
