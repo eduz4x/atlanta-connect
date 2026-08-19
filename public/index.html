@@ -10,33 +10,34 @@
 <body>
   <main class="landing">
     <div class="brand">
-      <div class="brand-mark">C</div>
-      <div class="brand-name">Atlanta</div>
+      <img class="brand-mark" src="/assets/logo.png" alt="Atlanta Network" />
     </div>
 
-    <section class="hero">
-      <p class="eyebrow">Call • Tela • Cinema</p>
-      <h1>Connect</h1>
-      <p>Seu cantinho para ficar em call com os amigos. Crie uma sala privada, converse por voz ou câmera, compartilhe a tela e use o modo cinema para assistir junto.</p>
-    </section>
+    <div class="hero-grid">
+      <section class="hero">
+        <p class="eyebrow">Call • Tela • Cinema</p>
+        <h1>Connect</h1>
+        <p>Seu cantinho para ficar em call com os amigos. Crie uma sala privada, converse por voz ou câmera, compartilhe a tela e use o modo cinema para assistir junto.</p>
+      </section>
 
-    <section class="panel">
-      <div class="field">
-        <label for="name">Seu nome</label>
-        <input id="name" type="text" maxlength="24" placeholder="Como podemos te chamar?" autocomplete="off" />
-      </div>
-
-      <div class="field">
-        <label for="room">Código da sala</label>
-        <div class="room-row">
-          <input id="room" type="text" maxlength="6" placeholder="EX: W75RF4" autocomplete="off" />
-          <button class="btn-ghost" id="generate-btn" type="button">Gerar</button>
+      <section class="panel">
+        <div class="field">
+          <label for="name">Seu nome</label>
+          <input id="name" type="text" maxlength="24" placeholder="Como podemos te chamar?" autocomplete="off" />
         </div>
-      </div>
 
-      <button class="btn-primary" id="enter-btn" type="button">Entrar na sala</button>
-      <p class="hint" id="hint"></p>
-    </section>
+        <div class="field">
+          <label for="room">Código da sala</label>
+          <div class="room-row">
+            <input id="room" type="text" maxlength="6" placeholder="EX: W75RF4" autocomplete="off" />
+            <button class="btn-ghost" id="generate-btn" type="button">Gerar</button>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="enter-btn" type="button">Entrar na sala</button>
+        <p class="hint" id="hint"></p>
+      </section>
+    </div>
 
     <section class="features">
       <div class="feature">
