@@ -414,7 +414,7 @@ button {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -466,7 +466,7 @@ button {
 
 .tile.screen-tile {
   grid-column: 1 / -1;
-  aspect-ratio: 16 / 8;
+  aspect-ratio: 16 / 9;
 }
 
 /* Cinema mode: focused stage takes over, rest becomes a filmstrip */
@@ -499,7 +499,7 @@ button {
 
 .filmstrip .tile {
   flex: 0 0 160px;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   border-radius: 10px;
 }
 
